@@ -344,7 +344,7 @@ public:
 
     /// \brief Appends the `other` tensor, along the given axis and returns a
     /// copy of the tensor. The `other` tensors must have same data-type,
-    /// device, and number of dimentions. All dimensions must be the same,
+    /// device, and number of dimensions. All dimensions must be the same,
     /// except the dimension along the axis the tensors are to be appended.
     ///
     /// This is the same as NumPy's semantics:
@@ -367,14 +367,14 @@ public:
     /// \endcode
     ///
     /// \param other Values of this tensor is appended to the tensor.
-    /// \param axis The axis along which values are appended. If axis is not
-    /// given, both tensors are flattened before use.
-    /// \return A copy of the tensor with `values` appended to axis. Note
-    /// that append does not occur in-place: a new array is allocated and
-    /// filled. If axis is None, out is a flattened tensor.
+    /// \param axis [optional] The axis along which values are appended. If axis
+    /// is not given, both tensors are flattened before use.
+    /// \return A copy of the tensor with `values` appended to axis. Note that
+    /// append does not occur in-place: a new array is allocated and filled. If
+    /// axis is None, out is a flattened tensor.
     Tensor Append(
             const Tensor& other,
-            const utility::optional<int64_t> axis = utility::nullopt) const;
+            const utility::optional<int64_t>& axis = utility::nullopt) const;
 
     /// Broadcast Tensor to a new broadcastable shape.
     Tensor Broadcast(const SizeVector& dst_shape) const;
@@ -398,6 +398,28 @@ public:
     /// - aten/src/ATen/native/TensorShape.cpp
     /// - aten/src/ATen/TensorUtils.cpp
     Tensor Reshape(const SizeVector& dst_shape) const;
+
+    /// Flattens input by reshaping it into a one-dimensional tensor. If
+    /// start_dim or end_dim are passed, only dimensions starting with start_dim
+    /// and ending with end_dim are flattened. The order of elements in input is
+    /// unchanged.
+    ///
+    /// Unlike NumPy’s flatten, which always copies input’s data, this function
+    /// may return the original object, a view, or copy. If no dimensions are
+    /// flattened, then the original object input is returned. Otherwise, if
+    /// input can be viewed as the flattened shape, then that view is returned.
+    /// Finally, only if the input cannot be viewed as the flattened shape is
+    /// input’s data copied.
+    ///
+    /// Ref:
+    /// - https://pytorch.org/docs/stable/tensors.html
+    /// - aten/src/ATen/native/TensorShape.cpp
+    /// - aten/src/ATen/TensorUtils.cpp
+    ///
+    /// \param start_dim The first dimension to flatten (inclusive).
+    /// \param end_dim The last dimension to flatten, starting from \p start_dim
+    /// (inclusive).
+    Tensor Flatten(int64_t start_dim = 0, int64_t end_dim = -1) const;
 
     /// Returns a new tensor view with the same data but of a different shape.
     ///
@@ -1212,7 +1234,7 @@ protected:
     /// Stride of a Tensor.
     /// The stride of a n-dimensional tensor is also n-dimensional.
     /// Stride(i) is the number of elements (not bytes) to jump in a
-    /// continuous memory space before eaching the next element in dimension
+    /// continuous memory space before reaching the next element in dimension
     /// i. For example, a 2x3x4 float32 dense tensor has shape(2, 3, 4) and
     /// stride(12, 4, 1). A slicing operation performed on the tensor can
     /// change the shape and stride.

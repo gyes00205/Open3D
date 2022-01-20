@@ -26,8 +26,6 @@
 
 #include "pybind/visualization/gui/gui.h"
 
-#include <pybind11/detail/common.h>
-
 #include "open3d/camera/PinholeCameraIntrinsic.h"
 #include "open3d/geometry/Image.h"
 #include "open3d/t/geometry/Image.h"
@@ -65,6 +63,7 @@
 #include "open3d/visualization/rendering/filament/FilamentEngine.h"
 #include "open3d/visualization/rendering/filament/FilamentRenderToBuffer.h"
 #include "pybind/docstring.h"
+#include "pybind/open3d_pybind.h"
 #include "pybind/visualization/visualization.h"
 #include "pybind11/functional.h"
 
@@ -174,10 +173,13 @@ std::shared_ptr<geometry::Image> RenderToImageWithoutWindow(
 }
 
 std::shared_ptr<geometry::Image> RenderToDepthImageWithoutWindow(
-        rendering::Open3DScene *scene, int width, int height) {
+        rendering::Open3DScene *scene,
+        int width,
+        int height,
+        bool z_in_view_space /* = false */) {
     return Application::GetInstance().RenderToDepthImage(
             scene->GetRenderer(), scene->GetView(), scene->GetScene(), width,
-            height);
+            height, z_in_view_space);
 }
 
 enum class EventCallbackResult { IGNORED = 0, HANDLED, CONSUMED };
@@ -1261,6 +1263,10 @@ void pybind_gui_classes(py::module &m) {
                     "Adds a tab. The first parameter is the title of the tab, "
                     "and the second parameter is a widget--normally this is a "
                     "layout.")
+            .def_property("selected_tab_index",
+                          &TabControl::GetSelectedTabIndex,
+                          &TabControl::SetSelectedTabIndex,
+                          "The index of the currently selected item")
             .def("set_on_selected_tab_changed",
                  &TabControl::SetOnSelectedTabChanged,
                  "Calls the provided callback function with the index of the "
@@ -1663,6 +1669,7 @@ void pybind_gui_classes(py::module &m) {
             py::none(), py::none(), "");
     filedlg_mode.value("OPEN", FileDialog::Mode::OPEN)
             .value("SAVE", FileDialog::Mode::SAVE)
+            .value("OPEN_DIR", FileDialog::Mode::OPEN_DIR)
             .export_values();
     filedlg.def(py::init<FileDialog::Mode, const char *, const Theme &>(),
                 "Creates either an open or save file dialog. The first "
